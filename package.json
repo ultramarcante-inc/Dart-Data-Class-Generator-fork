@@ -1,9 +1,9 @@
 {
 	"name": "dart-data-class-generator-fork",
-	"displayName": "Dart Data Class Generator Fork",
+	"displayName": "Data Class Generator For Dart",
 	"description": "Independent fork of Dart Data Class Generator with snake_case JSON/Map keys and expanded tests.",
 	"publisher": "ultramarcante",
-	"version": "0.6.0",
+	"version": "0.6.1",
 	"license": "MIT",
 	"engines": {
 		"vscode": "^1.37.0"
@@ -13,7 +13,9 @@
 		"url": "https://github.com/ultramarcante-inc/Dart-Data-Class-Generator-fork"
 	},
 	"homepage": "https://github.com/ultramarcante-inc/Dart-Data-Class-Generator-fork",
-	"bugs": { "url": "https://github.com/ultramarcante-inc/Dart-Data-Class-Generator-fork/issues" },
+	"bugs": {
+		"url": "https://github.com/ultramarcante-inc/Dart-Data-Class-Generator-fork/issues"
+	},
 	"icon": "assets/icon-fork.png",
 	"keywords": [
 		"dart data class generator",
@@ -38,17 +40,17 @@
 	"contributes": {
 		"commands": [
 			{
-				"title": "Dart Data Class Generator Fork: Generate from class properties",
+				"title": "Data Class Generator For Dart: Generate from class properties",
 				"command": "dart_data_class.generate.from_props"
 			},
 			{
-				"title": "Dart Data Class Generator Fork: Generate from JSON",
+				"title": "Data Class Generator For Dart: Generate from JSON",
 				"command": "dart_data_class.generate.from_json"
 			}
 		],
 		"configuration": [
 			{
-				"title": "Dart Data Class Generator Fork configuration",
+				"title": "Data Class Generator For Dart configuration",
 				"properties": {
 					"dart_data_class_generator.quick_fixes": {
 						"type": "boolean",
@@ -235,6 +237,7 @@
 		"@types/mocha": "^5.2.6",
 		"@types/node": "^10.12.21",
 		"@types/vscode": "^1.37.0",
+		"@vscode/vsce": "^4.0.0",
 		"eslint": "^5.13.0",
 		"glob": "^7.1.4",
 		"mocha": "^12.0.2",
