@@ -14,7 +14,8 @@ async function main() {
             launchArgs: [
                 '--user-data-dir=' + path.join(testDataDir, 'user-data'),
                 '--extensions-dir=' + path.join(testDataDir, 'extensions'),
-                '--disable-gpu'
+                '--disable-gpu',
+                ...(process.platform === 'linux' && process.env.CI === 'true' ? ['--no-sandbox'] : [])
             ]
         });
     } catch (err) {
