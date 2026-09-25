@@ -2298,35 +2298,25 @@ function createFileName(name) {
 }
 
 function getCurrentPath() {
-    let path = vscode.window.activeTextEditor.document.fileName;
-    let dirs = path.split("\\");
-    path = '';
-    for (let i = 0; i < dirs.length; i++) {
-        let dir = dirs[i];
-        if (i < dirs.length - 1) {
-            path += dir + "\\";
-        }
-    }
-
-    return path;
+    return path.dirname(vscode.window.activeTextEditor.document.fileName);
 }
 
 /**
  * @param {string} content
  * @param {string} name
  */
-async function writeFile(content, name, open = true, path = getCurrentPath()) {
-    let p = path + name + '.dart';
+async function writeFile(content, name, open = true, directory = getCurrentPath()) {
+    let p = path.join(directory, name + '.dart');
     if (fs.existsSync(p)) {
         let i = 0;
         do {
-            p = path + name + '_' + ++i + '.dart'
+            p = path.join(directory, name + '_' + ++i + '.dart');
         } while (fs.existsSync(p));
     }
 
     fs.writeFileSync(p, content, 'utf-8');
     if (open) {
-        let openPath = vscode.Uri.parse("file:///" + p);
+        let openPath = vscode.Uri.file(p);
         let doc = await vscode.workspace.openTextDocument(openPath);
         await vscode.window.showTextDocument(doc);
     }

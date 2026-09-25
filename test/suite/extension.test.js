@@ -335,6 +335,7 @@ suite('Dart Data Class Generator', () => {
             fs.writeFileSync(mainPath, json);
             const document = await vscode.workspace.openTextDocument(mainPath);
             await vscode.window.showTextDocument(document);
+            assert.strictEqual(path.relative(fixtureDir, extension.getCurrentPath()), '');
 
             const reader = new extension.JsonReader(json, 'profile');
             assert.strictEqual(await reader.error, null);

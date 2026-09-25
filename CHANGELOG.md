@@ -7,6 +7,7 @@ This is an independent fork of the original Dart Data Class Generator by bxqm, f
 - Added optional snake_case JSON/Map serialization, enabled by default; Dart field names stay camelCase.
 - Preserved original JSON key spelling when snake_case conversion is disabled and report name collisions after conversion.
 - Updated vulnerable dependencies and expanded integration coverage for generation and regeneration.
+- Fixed separate-file JSON generation on Linux and other non-Windows paths.
 - Updated visible extension identity and documentation while retaining existing command IDs and setting names for compatibility.
 - Added a higher-contrast fork icon and a checked, version-gated Marketplace publication workflow.
 ## 0.5.3
