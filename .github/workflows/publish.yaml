@@ -45,10 +45,16 @@ jobs:
         shell: bash
         env:
           BEFORE_SHA: ${{ github.event.before }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
           current=$(node -p "require('./package.json').version")
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Manual publication requested for version $current"
+            exit 0
+          fi
           previous=""
-          if git cat-file -e "${BEFORE_SHA}:package.json" 2>/dev/null; then
+          if [[ -n "$BEFORE_SHA" ]] && git cat-file -e "${BEFORE_SHA}:package.json" 2>/dev/null; then
             previous=$(git show "${BEFORE_SHA}:package.json" | node -e "let s=''; process.stdin.on('data', c => s += c); process.stdin.on('end', () => console.log(JSON.parse(s).version))")
           fi
           if [[ "$current" != "$previous" ]]; then
