@@ -1,19 +1,69 @@
+name: Test and publish extension
+
 on:
   push:
-  workflow_dispatch:
+    branches:
+      - master
 
-name: Deploy Extension
+permissions:
+  contents: read
+
+concurrency:
+  group: marketplace-publish
+  cancel-in-progress: false
+
 jobs:
-  deploy:
+  verify-and-publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v1
+      - uses: actions/checkout@v4
         with:
-          node-version: 12
-      - run: npm ci
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dart-lang/setup-dart@v1
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit dependencies
+        run: npm audit --audit-level=high
+
+      - name: Run VS Code integration tests
+        run: xvfb-run -a npm test
+
+      - name: Check whether package version changed
+        id: version
+        shell: bash
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          current=$(node -p "require('./package.json').version")
+          previous=""
+          if git cat-file -e "${BEFORE_SHA}:package.json" 2>/dev/null; then
+            previous=$(git show "${BEFORE_SHA}:package.json" | node -e "let s=''; process.stdin.on('data', c => s += c); process.stdin.on('end', () => console.log(JSON.parse(s).version))")
+          fi
+          if [[ "$current" != "$previous" ]]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Publishing version $current (previous: ${previous:-none})"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Version unchanged ($current); publication skipped."
+          fi
+
+      - name: Package VSIX
+        if: steps.version.outputs.changed == 'true'
+        run: |
+          mkdir -p dist
+          npx --yes @vscode/vsce package --out "dist/dart-data-class-generator-fork-$(node -p "require('./package.json').version").vsix"
+
       - name: Publish to Visual Studio Marketplace
-        uses: HaaLeo/publish-vscode-extension@v0
-        with:
-          pat: ${{ secrets.VS_MARKETPLACE_TOKEN }}
-          registryUrl: https://marketplace.visualstudio.com
+        if: steps.version.outputs.changed == 'true'
+        run: npx --yes @vscode/vsce publish --oidc --skip-duplicate --packagePath "dist/dart-data-class-generator-fork-$(node -p "require('./package.json').version").vsix"

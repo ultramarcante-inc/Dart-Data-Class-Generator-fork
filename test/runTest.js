@@ -1,23 +1,28 @@
+const fs = require('fs');
+const os = require('os');
 const path = require('path');
 
 const { runTests } = require('vscode-test');
 
 async function main() {
-	try {
-		// The folder containing the Extension Manifest package.json
-		// Passed to `--extensionDevelopmentPath`
-		const extensionDevelopmentPath = path.resolve(__dirname, '../../');
-
-		// The path to the extension test script
-		// Passed to --extensionTestsPath
-		const extensionTestsPath = path.resolve(__dirname, './suite/index');
-
-		// Download VS Code, unzip it and run the integration test
-		await runTests({ extensionDevelopmentPath, extensionTestsPath });
-	} catch (err) {
-		console.error('Failed to run tests');
-		process.exit(1);
-	}
+    const testDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'dart-data-class-generator-test-'));
+    try {
+        await runTests({
+            extensionDevelopmentPath: path.resolve(__dirname, '..'),
+            extensionTestsPath: path.resolve(__dirname, 'suite', 'index'),
+            vscodeExecutablePath: process.env.VSCODE_EXECUTABLE_PATH,
+            launchArgs: [
+                '--user-data-dir=' + path.join(testDataDir, 'user-data'),
+                '--extensions-dir=' + path.join(testDataDir, 'extensions'),
+                '--disable-gpu'
+            ]
+        });
+    } catch (err) {
+        console.error('Failed to run tests', err);
+        process.exitCode = 1;
+    } finally {
+        fs.rmSync(testDataDir, { recursive: true, force: true });
+    }
 }
 
 main();

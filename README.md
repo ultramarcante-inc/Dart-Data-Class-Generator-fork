@@ -1,108 +1,89 @@
-# Dart Data Class Generator
+# Dart Data Class Generator Fork
 
-[![GitHub Stars](https://img.shields.io/github/stars/bxqm/dart_data_class_generator.svg?logo=github)](https://github.com/bxqm/dart_data_class_generator)
-[![Downloads](https://img.shields.io/visual-studio-marketplace/d/hzgood.dart-data-class-generator?color=blue)](https://github.com/bxqm/dart_data_class_generator)
+A community fork of [Dart Data Class Generator](https://github.com/bxqm/Dart-Data-Class-Generator). Generate Dart data classes from class properties or JSON, including constructors, `copyWith`, Map/JSON serialization, equality, and `toString`.
 
+This is an independent fork, not an official release by the original authors. It builds on the work of [bxqm](https://github.com/bxqm/Dart-Data-Class-Generator) and the [huang12zheng fork](https://github.com/huang12zheng/Dart-Data-Class-Generator). See [Credits and license](#credits-and-license) below.
 
-Create dart data classes easily, fast and without writing boilerplate or running code generation.  
+## What's different in this fork
 
-## Features
+- JSON and Map keys use `snake_case` by default; Dart fields remain `camelCase`.
+- JSON input preserves its original key spelling for serialization when snake_case conversion is disabled. The generator detects names that would collide after conversion instead of silently producing duplicate fields.
+- Dependency security fixes and expanded integration tests.
+- Existing command IDs and `dart_data_class_generator.*` settings remain compatible with the previous extension.
 
-The generator can generate the constructor, copyWith, toMap, fromMap, toJson, fromJson, toString, operator == and hashCode methods for a class based on [class properties](#create-data-classes-based-on-class-properties) or [raw JSON](#create-data-classes-based-on-json-beta).
+## Generate from class properties
 
-Additionally the generator has a couple of useful quickfixes to speed up your development process. See the [Additional Features Section](#additional-features) for more.
+![Generate from class properties](https://raw.githubusercontent.com/ultramarcante-inc/Dart-Data-Class-Generator-fork/master/assets/gif_from_class.gif)
 
-If this extension is helpful to you, consider giving it a star on [GitHub](https://github.com/bxqm/Dart-Data-Class-Generator) or leave a review on the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=hzgood.dart-data-class-generator) :heart:
+1. Open a Dart file with a class containing fields.
+2. Open the Command Palette with `Ctrl+Shift+P` (`Cmd+Shift+P` on macOS).
+3. Run **Dart Data Class Generator Fork: Generate from class properties**. If the file contains multiple classes, select the classes to generate.
 
-## Create Data Classes Based on Class Properties
+You can also put the cursor on a class, constructor, or field and use the **Quick Fix** menu (`Ctrl+.` / `Cmd+.`) to generate a whole class or selected methods.
 
-![](assets/gif_from_class.gif)
+Running generation again updates generated methods. Review the diff first: custom changes to generated methods may be overwritten.
 
-### **Usage**
+For enums, annotate the field with a comment:
 
-You can generate data classes either by the quick fix dialog or by running a command. In the quick fix dialog you have the option to not only generate whole data classes but also only specific methods. The command has the advantage of being able to generate multiple classes at the same time.
-
-#### **Quick fix**
-
-- Create a class with properties.
-- Place your cursor on the first line of the class, the constructor or a field.
-- Hit **CTRL + .** to open the quick fix dialog.
-- Choose one of the available options.
-
-#### **Command**
-
-- Create a class with properties.
-- Hit **CTRL + P** to open the command dialog.
-- Search for **Dart Data Class Generator: Generate from class properties** and hit enter.
-- When there are multiple classes in the current file, choose the ones you'd like to create data classes of in the dialog.
-
-It is also possible to run the generator on an existing data class (e.g. when some parameters changed). The generator will then try to find the changes and replace the class with its updated version. **Note that custom changes to generated functions may be overriden**.
-
-You can also customize the generator for example to use [Equatable](https://pub.dev/packages/equatable) for value equality. See the [Settings](#-settings) section for more options.
-
-#### **Enums**
-
-In order for `enums` to be correctly serialized from and to JSON, please annotate them using a comment like so:
 ```dart
 // enum
-final Enum myEnum;
+final Status status;
 ```
 
-#### Usage with Equatable
+Equatable and EquatableMixin generation can be enabled through the settings below.
 
-Although using the generator is fast, it still doesn't spare you from all the boiler plate necessary, which can be visually distracting. To reduce the amount of boiler plate needed, the generator works with **Equatable**. Just extend the class with `Equatable` or mix with `EquatableMixin` and the generator will use `Equatable` for value equality. 
+## Generate from JSON
 
-<img width="512" src="assets/equatable_demo.gif"/>
+![Generate from JSON](https://raw.githubusercontent.com/ultramarcante-inc/Dart-Data-Class-Generator-fork/master/assets/gif_from_json.gif)
 
-You can also use the setting `dart_data_class_generator.useEquatable`, if you always want to use `Equatable` for value equality.
+1. Paste raw JSON into an otherwise empty `.dart` file.
+2. Open the Command Palette and run **Dart Data Class Generator Fork: Generate from JSON**.
+3. Enter the top-level class name. For nested objects, choose whether to use separate files or the current file.
 
-## Create Data Classes Based on JSON (Beta)
+JSON import is still a beta feature. In particular, a numeric sample such as `1` may be inferred as `int` even if later payloads contain fractional values.
 
-![](assets/gif_from_json.gif)
+## Snake-case serialization
 
-### **Usage**
+The setting `dart_data_class_generator.json.snakeCase` defaults to `true`. For example, the Dart field `firstName` is serialized with the Map/JSON key `first_name`; generated `toMap` and `fromMap` use the same key. Set it to `false` to keep the original input key spelling instead. The `toJson` and `fromJson` methods delegate to the Map methods.
 
-- Create an **empty dart** file.
-- Paste the **raw JSON without modifying it** into the otherwise empty file.
-- Hit **CTRL + P** to open the command dialog.
-- Search for **Dart Data Class Generator: Generate from JSON** and hit enter.
-- Type in a class name in the input dialog. This will be the name of the **top level class** if the JSON contains nested objects, all other class names will be infered from the JSON keys.
-- When there are nested objects in the JSON, a dialog will be appear if you want to seperate the classes into multiple files or if all classes should be in the same file.
+```json
+{
+  "dart_data_class_generator.json.snakeCase": false
+}
+```
 
-> **Note:**  
-> **This feature is still in beta!**  
-> **Many API's return numbers like 0 or 1 as an integer and not as a double even when they otherwise are. Thus the generator may confuse a value that is usually a double as an int.**  
+Changing this setting changes the wire format of regenerated classes. Check compatibility with existing API payloads before switching it in an established project. If two input keys normalize to the same Dart field or serialization key, generation reports a collision.
 
-## Additional Features
+## Additional features
 
-The extension includes some additional quick fixes that might be useful to you:
+The extension also offers a quick fix to sort and format Dart imports.
 
-### Import refactoring
-
-Sort imports alphabetically and bring them into the correct format easily.
-
-<img width="512" src="assets/import_demo.gif"/>
-
+![Import refactoring](https://raw.githubusercontent.com/ultramarcante-inc/Dart-Data-Class-Generator-fork/master/assets/import_demo.gif)
 
 ## Settings
 
-You can customize the generator to only generate the functions you want in your settings file.
+All settings retain the `dart_data_class_generator` prefix for compatibility.
 
-* `dart_data_class_generator.quick_fixes`: If true, enables quick fixes to quickly generate data classes or specific methods only.
-* `dart_data_class_generator.useEquatable`: If true, uses Equatable for value equality and hashCode.
-* `dart_data_class_generator.useEquatableMixin`: If true, uses equatableMixin for value equality and hashcode.(dart_data_class_generator.useEquatable must be true)
-* `dart_data_class_generator.fromMap.default_values`: If true, checks if a field is null when deserializing and provides a non-null default value.
-* `dart_data_class_generator.constructor.default_values`: If true, generates default values for the constructor.
-* `dart_data_class_generator.constructor.required`: If true, generates @required annotation for every constructor parameter. Note: The generator wont generate default values for the constructor if enabled!
-* `dart_data_class_generator.json.seperate`: Whether to seperate a JSON into multiple files, when the JSON contains nested objects. ask: choose manually every time, seperate: always seperate into multiple files, current_file: always insert all classes into the current file.
-* `dart_data_class_generator.override.manual`: If true, asks, when overriding a class (running the command on an existing class), for every single function/constructor that needs to be changed whether the generator should override the function or not. This allows you to preserve custom changes you made to the function/constructor that would be otherwise overwritten by the generator.
-* `dart_data_class_generator.constructor.enabled`: If true, generates a constructor for a data class.
-* `dart_data_class_generator.copyWith.enabled`: If true, generates a copyWith function for a data class.
-* `dart_data_class_generator.toMap.enabled`: If true, generates a toMap function for a data class.
-* `dart_data_class_generator.fromMap.enabled`: If true, generates a fromMap function for a data class.
-* `dart_data_class_generator.toJson.enabled`: If true, generates a toJson function for a data class.
-* `dart_data_class_generator.fromJson.enabled`: If true, generates a fromJson function for a data class.
-* `dart_data_class_generator.toString.enabled`: If true, generates a toString function for a data class.
-* `dart_data_class_generator.equality.enabled`: If true, generates an override of the == (equals) operator for a data class.
-* `dart_data_class_generator.hashCode.enabled`: If true, generates a hashCode function for a data class.
-* `dart_data_class_generator.hashCode.use_jenkins`: If true, uses the Jenkins SMI hash function instead of bitwise operator from dart:ui.
+| Setting suffix | Default | Purpose |
+| --- | --- | --- |
+| `json.snakeCase` | `true` | Convert JSON/Map keys to snake_case. |
+| `json.seperate` | `ask` | Place nested classes in separate files or the current file. The legacy spelling is retained for compatibility. |
+| `quick_fixes` | `true` | Enable quick fixes. |
+| `fromMap.default_values` | `false` | Provide defaults when deserializing null values. |
+| `constructor.default_values` | `false` | Generate constructor defaults. |
+| `constructor.required` | `false` | Add `@required` to constructor parameters; incompatible with constructor defaults. |
+| `override.manual` | `false` | Confirm each generated method replacement. |
+| `ignoreComment.enabled` | empty | Add a file-level analyzer comment. |
+| `constructor.enabled`, `copyWith.enabled`, `toMap.enabled`, `fromMap.enabled`, `toJson.enabled`, `fromJson.enabled`, `toString.enabled`, `equality.enabled`, `hashCode.enabled` | `true` | Enable individual generated members. |
+| `hashCode.use_jenkins` | `false` | Use the Jenkins hash implementation. |
+| `useEquatable`, `useEquatableMixin` | `false` | Use Equatable for equality and hash codes. The mixin option requires `useEquatable`. |
+
+## Test locally
+
+Run `npm ci`, then `npm test` with VS Code and Dart installed. In VS Code, open this repository and press `Ctrl+F5` to launch an Extension Development Host without attaching the debugger. You can run either command there before publishing. For a packaged check, build a VSIX with `npx @vscode/vsce package` and install it in a separate VS Code profile using **Extensions: Install from VSIX...**.
+
+## Credits and license
+
+The original [Dart Data Class Generator](https://github.com/bxqm/Dart-Data-Class-Generator) was created by **bxqm**. This repository also follows the [huang12zheng fork](https://github.com/huang12zheng/Dart-Data-Class-Generator). The fork's new work is maintained by Ultramarcante contributors. The original MIT copyright notice remains in [LICENSE.md](LICENSE.md), and the earlier release history remains in [CHANGELOG.md](CHANGELOG.md).
+
+Issues and contributions for this fork: [ultramarcante-inc/Dart-Data-Class-Generator-fork](https://github.com/ultramarcante-inc/Dart-Data-Class-Generator-fork).

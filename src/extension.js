@@ -87,7 +87,7 @@ async function generateJsonDataClass() {
                 }
             }
 
-            vscode.window.withProgress({
+            return vscode.window.withProgress({
                 location: vscode.ProgressLocation.Notification,
                 cancellable: false
             }, async function (progress, token) {
@@ -497,8 +497,9 @@ class Imports {
 
         let workspace = projectName;
         if (workspace == null || workspace.length == 0) {
-            const file = getEditor().document.uri;
-            if (file.scheme === 'file') {
+            const editor = getEditor();
+            const file = editor && editor.document.uri;
+            if (file && file.scheme === 'file') {
                 const folder = vscode.workspace.getWorkspaceFolder(file);
                 if (folder) {
                     workspace = path.basename(folder.uri.fsPath).replace('-', '_');
@@ -599,10 +600,11 @@ class ClassField {
      * @param {number} line
      * @param {boolean} isFinal
      * @param {boolean} isConst
+     * @param {string} jsonKey
      */
-    constructor(type, name, line = 1, isFinal = true, isConst = false) {
+    constructor(type, name, line = 1, isFinal = true, isConst = false, jsonKey = name) {
         this.rawType = type;
-        this.jsonName = name;
+        this.jsonName = readSetting('json.snakeCase') ? toSnakeCase(jsonKey) : jsonKey;
         this.name = toVarName(name);
         this.line = line;
         this.isFinal = isFinal;
@@ -1659,10 +1661,20 @@ class DataClassGenerator {
                         }
 
                         if (type != null && name != null) {
-                            const prop = new ClassField(type, name, linePos, isFinal, isConst);
+                            const prevLine = i > 0 ? lines[i - 1] : "";
+                            const jsonKeyMatch = prevLine.trim().match(/^\/\/ json_key: (.+)$/);
+                            let jsonKey = name;
+                            if (jsonKeyMatch) {
+                                try {
+                                    const parsed = JSON.parse(jsonKeyMatch[1].trim());
+                                    if (typeof parsed === "string") jsonKey = parsed;
+                                } catch (e) {
+                                    // Ignore malformed metadata and use the Dart field name.
+                                }
+                            }
+                            const prop = new ClassField(type, name, linePos, isFinal, isConst, jsonKey);
 
                             if (i > 0) {
-                                const prevLine = lines[i - 1];
                                 prop.isEnum = prevLine.match(/.*\/\/(\s*)enum/) != null;
                             }
 
@@ -1746,6 +1758,7 @@ class JsonReader {
         this.clazzes = [];
         /** @type {DartFile[]} */
         this.files = [];
+        this.validationError = null;
 
         this.error = this.checkJson();
     }
@@ -1757,7 +1770,7 @@ class JsonReader {
         }
 
         if (await this.generateFiles()) {
-            return 'The provided JSON is malformed or couldn\'t be parsed!';
+            return this.validationError || 'The provided JSON is malformed or couldn\'t be parsed!';
         }
 
         return null;
@@ -1844,8 +1857,16 @@ class JsonReader {
                 }
             }
 
-            clazz.properties.push(new ClassField(type, k, ++i));
-            clazz.classContent += `  final ${type} ${toVarName(k)};\n`;
+            const dartName = toCamelCase(k);
+            if (k !== dartName) i++; // Account for the JSON-key comment in class line positions.
+            const field = new ClassField(type, dartName, ++i, true, false, k);
+            if (clazz.properties.some(existing => existing.name === field.name || existing.jsonName === field.jsonName)) {
+                this.validationError = `JSON key "${k}" collides with another key after name conversion (${field.name} / ${field.jsonName}).`;
+                throw new Error(this.validationError);
+            }
+            clazz.properties.push(field);
+            if (k !== field.name) clazz.classContent += `  // json_key: ${JSON.stringify(k)}\n`;
+            clazz.classContent += `  final ${type} ${field.name};\n`;
 
             // If object is JSONArray, break after first item.
             if (isArray) break;
@@ -1978,7 +1999,7 @@ class DataClassCodeActions {
     constructor() {
         this.clazz = new DartClass();
         this.generator = null;
-        this.document = getDoc();
+        this.document = null;
         this.line = '';
         this.range;
     }
@@ -2107,7 +2128,7 @@ class DataClassCodeActions {
      * @param {DartClass} clazz
      */
     getClazzEdit(clazz, imports = null) {
-        return getReplaceEdit(clazz, imports || this.generator.imports);
+        return getReplaceEdit(clazz, imports || this.generator.imports, false, this.document);
     }
 
     createConstructorFix() {
@@ -2166,12 +2187,12 @@ class DataClassCodeActions {
  * @param {any} values
  * @param {Imports} imports
  */
-function getReplaceEdit(values, imports = null, showLogs = false) {
+function getReplaceEdit(values, imports = null, showLogs = false, document = getDoc()) {
     /** @type {DartClass[]} */
     const clazzes = values instanceof DartClass ? [values] : values;
     const hasMultiple = clazzes.length > 1;
     const edit = new vscode.WorkspaceEdit();
-    const uri = getDoc().uri;
+    const uri = document.uri;
 
     const noChanges = [];
 
@@ -2180,7 +2201,7 @@ function getReplaceEdit(values, imports = null, showLogs = false) {
     const lines = [];
     const ignores = [];
 
-    const text = getDocText();
+    const text = document.getText();
     text.split("\n").forEach(function (line) {
       if (line.includes("// ignore_for_file:")) lines.push(line);
     });
@@ -2384,6 +2405,24 @@ function toVarName(source) {
         r = 'n' + r;
 
     return r;
+}
+
+/** Convert camelCase or PascalCase to snake_case.
+ * @param {string} str
+ */
+function toSnakeCase(str) {
+    if (!str) return '';
+    return str
+        .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+        .replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2')
+        .toLowerCase();
+}
+
+/** Make a camelCase Dart field name from a JSON key.
+ * @param {string} source
+ */
+function toCamelCase(source) {
+    return toVarName(toSnakeCase(source).replace(/_([a-z0-9])/g, (_, char) => char.toUpperCase()));
 }
 
 /**
@@ -2642,6 +2681,7 @@ module.exports = {
     writeFile,
     getCurrentPath,
     toVarName,
+    toSnakeCase,
     createFileName,
     editorInsert,
     editorReplace,

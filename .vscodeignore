@@ -6,3 +6,10 @@ vsc-extension-quickstart.md
 **/jsconfig.json
 **/*.map
 **/.eslintrc.json
+
+.github/**
+assets/*.gif
+assets/*.afdesign
+assets/icon.png
+*.vsix
+dist/**

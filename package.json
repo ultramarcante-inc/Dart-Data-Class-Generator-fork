@@ -1,17 +1,20 @@
 {
-	"name": "dart-data-class-generator",
-	"displayName": "Dart Data Class Generator",
-	"description": "Create dart data classes easily, fast and without writing boilerplate or running code generation.",
-	"publisher": "hzgood",
-	"version": "0.5.4",
+	"name": "dart-data-class-generator-fork",
+	"displayName": "Dart Data Class Generator Fork",
+	"description": "Independent fork of Dart Data Class Generator with snake_case JSON/Map keys and expanded tests.",
+	"publisher": "ultramarcante",
+	"version": "0.6.0",
+	"license": "MIT",
 	"engines": {
 		"vscode": "^1.37.0"
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/huang12zheng/Dart-Data-Class-Generator/commits/master"
+		"url": "https://github.com/ultramarcante-inc/Dart-Data-Class-Generator-fork"
 	},
-	"icon": "assets/icon.png",
+	"homepage": "https://github.com/ultramarcante-inc/Dart-Data-Class-Generator-fork",
+	"bugs": { "url": "https://github.com/ultramarcante-inc/Dart-Data-Class-Generator-fork/issues" },
+	"icon": "assets/icon-fork.png",
 	"keywords": [
 		"dart data class generator",
 		"dart data class",
@@ -20,7 +23,7 @@
 		"data class generator"
 	],
 	"author": {
-		"name": "hzgood"
+		"name": "Ultramarcante contributors"
 	},
 	"categories": [
 		"Programming Languages",
@@ -35,17 +38,17 @@
 	"contributes": {
 		"commands": [
 			{
-				"title": "Dart Data Class Generator: Generate from class properties",
+				"title": "Dart Data Class Generator Fork: Generate from class properties",
 				"command": "dart_data_class.generate.from_props"
 			},
 			{
-				"title": "Dart Data Class Generator: Generate from JSON",
+				"title": "Dart Data Class Generator Fork: Generate from JSON",
 				"command": "dart_data_class.generate.from_json"
 			}
 		],
 		"configuration": [
 			{
-				"title": "Dart Data Class Generator configuration",
+				"title": "Dart Data Class Generator Fork configuration",
 				"properties": {
 					"dart_data_class_generator.quick_fixes": {
 						"type": "boolean",
@@ -96,6 +99,11 @@
 						"type": "string",
 						"default": "",
 						"description": "Add a analyzer comment for file"
+					},
+					"dart_data_class_generator.json.snakeCase": {
+						"type": "boolean",
+						"default": true,
+						"description": "Convert JSON and Map keys to snake_case."
 					},
 					"dart_data_class_generator.json.seperate": {
 						"type": "string",
@@ -229,8 +237,12 @@
 		"@types/vscode": "^1.37.0",
 		"eslint": "^5.13.0",
 		"glob": "^7.1.4",
-		"mocha": "^6.1.4",
+		"mocha": "^12.0.2",
 		"typescript": "^3.3.1",
 		"vscode-test": "^1.0.2"
+	},
+	"overrides": {
+		"flatted": "3.4.2",
+		"tmp": "0.2.7"
 	}
 }
